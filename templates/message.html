@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Room</title>
+    <style>
+        /* General styles */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            width: 80%;
+            margin: 0 auto;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+        }
+
+        h2 {
+            margin: 0 0 20px;
+            color: #333;
+            text-align: center;
+        }
+
+        /* Chat container */
+        .chat-body {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background-color: #fafafa;
+            padding: 10px;
+            margin-bottom: 20px;
+        }
+
+        .receive, .send {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 8px;
+            max-width: 70%;
+        }
+
+        .receive {
+            background-color: #e1ffc7;
+            align-self: flex-start;
+        }
+
+        .send {
+            background-color: #d1eaff;
+            align-self: flex-end;
+        }
+
+        /* Form styling */
+        form {
+            display: flex;
+            flex-direction: column;
+        }
+
+        textarea {
+            width: 100%;
+            height: 60px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            resize: none;
+            margin-bottom: 10px;
+        }
+
+        button.submit {
+            align-self: flex-end;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        button.submit:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Chat Room</h2>
+        <div class="chat-body" id="chatContainer">
+            {% for i in messages %}
+                {% if i.sender != user %}
+                    <div class="receive">
+                        <p>{{ i.message }}<strong>-{{ i.sender }}</strong></p>
+                    </div>
+                {% else %}
+                    <div class="send">
+                        <p>{{ i.message }}</p>
+                    </div>
+                {% endif %}
+            {% endfor %}
+        </div>
+        <form id="message-form">
+            <textarea id="msg" name="message" placeholder="Type your message..." required></textarea>
+            <button class="submit" type="submit">Send</button>
+        </form>
+    </div>
+
+    <script>
+        const websocketProtocol = window.location.protocol === "https:" ? "wss" : "ws";
+        const wsEndpoint = `${websocketProtocol}://${window.location.host}/ws/{{ room_name }}/`;
+        const socket = new WebSocket(wsEndpoint);
+
+        socket.onopen = () => {
+            console.log("WebSocket connection opened!");
+        };
+
+        socket.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            const chatContainer = document.getElementById('chatContainer');
+            const messageElement = document.createElement('div');
+
+            if (data.sender === "{{ user }}") {
+                messageElement.className = 'send';
+                messageElement.innerHTML = `<p>${data.message}</p>`;
+            } else {
+                messageElement.className = 'receive';
+                messageElement.innerHTML = `<p>${data.message}<strong>-${data.sender}</strong></p>`;
+            }
+
+            chatContainer.appendChild(messageElement);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        };
+
+        document.getElementById('message-form').onsubmit = (event) => {
+            event.preventDefault();
+            const messageInput = document.getElementById('msg');
+            const message = messageInput.value;
+
+            socket.send(JSON.stringify({
+                'message': message,
+                'sender': "{{ user }}"
+            }));
+
+            messageInput.value = '';
+        };
+    </script>
+</body>
+</html>
