@@ -7,7 +7,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-yez#2k@0n&c7qc#vyfs9)q4la-*)2k756@w3#*z7&ybfvbzel^'
 
 DEBUG = True
-ALLOWED_HOSTS = ['https://chat-app-dtl.onrender.com']
+ALLOWED_HOSTS = ['https://chat-app-dtl.onrender.com','*']
 
 INSTALLED_APPS = [
     'daphne',
