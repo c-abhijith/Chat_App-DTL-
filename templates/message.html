@@ -113,7 +113,9 @@
 
     <script>
         const websocketProtocol = window.location.protocol === "https:" ? "wss" : "ws";
+        // const wsEndpoint = `${websocketProtocol}://${window.location.host}/ws/{{ room_name }}/`;
         const wsEndpoint = `${websocketProtocol}://${window.location.host}/ws/{{ room_name }}/`;
+
         const socket = new WebSocket(wsEndpoint);
 
         socket.onopen = () => {
