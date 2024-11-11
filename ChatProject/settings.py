@@ -1,5 +1,7 @@
 from pathlib import Path
-
+import os
+from dotenv import load_dotenv
+import dj_database_url
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = 'django-insecure-yez#2k@0n&c7qc#vyfs9)q4la-*)2k756@w3#*z7&ybfvbzel^'
@@ -58,12 +60,11 @@ CHANNEL_LAYERS = {
     "default": {"BACKEND": "channels.layers.InMemoryChannelLayer"},
 }
 
+load_dotenv()
 
+database_url = os.getenv('DATABASE_URL')
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
+    'default': dj_database_url.parse(database_url, conn_max_age=600, ssl_require=True)
 }
 
 
