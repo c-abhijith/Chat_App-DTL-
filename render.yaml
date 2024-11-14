@@ -3,9 +3,19 @@ services:
     name: chat-app-dtl
     env: python
     buildCommand: pip install -r requirements.txt
-    startCommand: daphne -b 0.0.0.0 -p $PORT ChatProject.asgi:application
+    startCommand: daphne -b 0.0.0.0 -p $PORT ChatProject.asgi:application --websocket-timeout 300
     envVars:
       - key: PYTHON_VERSION
         value: 3.9.0
       - key: DJANGO_SETTINGS_MODULE
         value: ChatProject.settings
+      - key: REDIS_URL
+        fromService:
+          name: redis-chat
+          type: redis
+          property: connectionString
+
+  - type: redis
+    name: redis-chat
+    ipAllowList: []
+    plan: free

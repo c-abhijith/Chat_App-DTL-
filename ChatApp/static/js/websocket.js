@@ -4,7 +4,6 @@ const maxReconnectAttempts = 5;
 
 function connectWebSocket(roomName) {
     if (socket && socket.readyState === WebSocket.OPEN) {
-        console.log("WebSocket is already connected");
         return socket;
     }
 
@@ -12,44 +11,53 @@ function connectWebSocket(roomName) {
     const wsHost = window.location.host;
     const wsUrl = `${wsScheme}://${wsHost}/ws/${roomName}/`;
     
-    console.log("Connecting to WebSocket:", wsUrl);
     socket = new WebSocket(wsUrl);
     
     socket.onopen = function(e) {
-        console.log("WebSocket connection established");
-        reconnectAttempts = 0; // Reset reconnect attempts on successful connection
+        console.log("Connected to WebSocket");
+        reconnectAttempts = 0;
+        heartbeat();
     };
     
     socket.onclose = function(e) {
-        console.log("WebSocket connection closed", e);
+        console.log("WebSocket closed:", e.code, e.reason);
+        clearInterval(heartbeatInterval);
         
         if (reconnectAttempts < maxReconnectAttempts) {
             const timeout = Math.min(1000 * Math.pow(2, reconnectAttempts), 10000);
-            console.log(`Attempting to reconnect in ${timeout/1000} seconds...`);
+            console.log(`Reconnecting in ${timeout/1000} seconds...`);
             
             setTimeout(() => {
                 reconnectAttempts++;
-                connectWebSocket(roomName);
+                socket = connectWebSocket(roomName);
             }, timeout);
-        } else {
-            console.log("Max reconnection attempts reached");
         }
     };
     
     socket.onerror = function(e) {
-        console.error("WebSocket error occurred:", e);
+        console.error("WebSocket error:", e);
     };
     
     socket.onmessage = function(e) {
         try {
             const data = JSON.parse(e.data);
-            console.log("Received message:", data);
-            // Handle the message here (e.g., update UI)
+            if (data.type === 'pong') {
+                return;
+            }
             updateChatUI(data);
         } catch (error) {
-            console.error("Error processing message:", error);
+            console.error("Message error:", error);
         }
     };
+    
+    let heartbeatInterval;
+    function heartbeat() {
+        heartbeatInterval = setInterval(() => {
+            if (socket.readyState === WebSocket.OPEN) {
+                socket.send(JSON.stringify({ type: 'ping' }));
+            }
+        }, 30000);
+    }
     
     return socket;
 }
@@ -67,14 +75,21 @@ function updateChatUI(data) {
 
 // Function to send message
 function sendMessage(message, sender) {
-    if (socket && socket.readyState === WebSocket.OPEN) {
+    if (!socket || socket.readyState !== WebSocket.OPEN) {
+        console.error("WebSocket not connected");
+        socket = connectWebSocket(roomName);
+        return false;
+    }
+    
+    try {
         socket.send(JSON.stringify({
+            'type': 'message',
             'message': message,
             'sender': sender
         }));
         return true;
-    } else {
-        console.error("WebSocket is not connected");
+    } catch (error) {
+        console.error("Send error:", error);
         return false;
     }
 } 

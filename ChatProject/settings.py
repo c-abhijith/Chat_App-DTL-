@@ -25,13 +25,13 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'corsheaders.middleware.CorsMiddleware',
 ]
 
 ROOT_URLCONF = 'ChatProject.urls'
@@ -63,6 +63,7 @@ CHANNEL_LAYERS = {
         'BACKEND': 'channels_redis.core.RedisChannelLayer',
         'CONFIG': {
             "hosts": [os.environ.get('REDIS_URL', 'redis://localhost:6379')],
+            "symmetric_encryption_keys": [SECRET_KEY],
         },
     },
 }
@@ -115,10 +116,21 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # WebSocket settings
 CSRF_TRUSTED_ORIGINS = ['https://chat-app-dtl.onrender.com']
-CORS_ALLOW_ALL_ORIGINS = True  # Only in development
+CORS_ALLOW_ALL_ORIGINS = False
 CORS_ALLOWED_ORIGINS = [
     "https://chat-app-dtl.onrender.com",
 ]
-
 CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_METHODS = ['GET', 'POST', 'OPTIONS']
+CORS_ALLOW_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+]
 
