@@ -19,6 +19,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'ChatApp',
     'channels',
+    'corsheaders',
 ]
 
 MIDDLEWARE = [
@@ -30,6 +31,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
 ]
 
 ROOT_URLCONF = 'ChatProject.urls'
@@ -117,4 +119,6 @@ CORS_ALLOW_ALL_ORIGINS = True  # Only in development
 CORS_ALLOWED_ORIGINS = [
     "https://chat-app-dtl.onrender.com",
 ]
+
+CORS_ALLOW_CREDENTIALS = True
 
