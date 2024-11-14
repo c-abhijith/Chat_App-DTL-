@@ -8,30 +8,51 @@ function connectWebSocket(roomName) {
     
     console.log("Connecting to:", wsUrl);
     
-    socket = new WebSocket(wsUrl);
-    
-    socket.onopen = function(e) {
-        console.log("Connected!");
-        reconnectAttempts = 0;
-    };
-    
-    socket.onclose = function(e) {
-        console.log("Disconnected. Code:", e.code, "Reason:", e.reason);
+    try {
+        socket = new WebSocket(wsUrl);
+        
+        socket.onopen = function(e) {
+            console.log("WebSocket connection established");
+            reconnectAttempts = 0;
+            // Send a test message
+            socket.send(JSON.stringify({
+                'type': 'ping'
+            }));
+        };
+        
+        socket.onclose = function(e) {
+            console.log("WebSocket closed. Code:", e.code, "Reason:", e.reason);
+            handleReconnection(roomName);
+        };
+        
+        socket.onerror = function(e) {
+            console.error("WebSocket error occurred");
+        };
+        
+        socket.onmessage = function(e) {
+            try {
+                const data = JSON.parse(e.data);
+                console.log("Received:", data);
+                
+                if (data.type === 'pong') {
+                    console.log("Connection confirmed with pong");
+                    return;
+                }
+                
+                if (data.type === 'connection_established') {
+                    console.log("Connection established to room:", data.room);
+                    return;
+                }
+                
+                updateChatUI(data);
+            } catch (error) {
+                console.error("Message processing error:", error);
+            }
+        };
+    } catch (error) {
+        console.error("WebSocket construction error:", error);
         handleReconnection(roomName);
-    };
-    
-    socket.onerror = function(e) {
-        console.error("WebSocket error:", e);
-    };
-    
-    socket.onmessage = function(e) {
-        try {
-            const data = JSON.parse(e.data);
-            updateChatUI(data);
-        } catch (error) {
-            console.error("Message error:", error);
-        }
-    };
+    }
     
     return socket;
 }
@@ -39,7 +60,7 @@ function connectWebSocket(roomName) {
 function handleReconnection(roomName) {
     if (reconnectAttempts < maxReconnectAttempts) {
         const timeout = 1000 * (reconnectAttempts + 1);
-        console.log(`Reconnecting in ${timeout/1000} seconds...`);
+        console.log(`Reconnecting (${reconnectAttempts + 1}/${maxReconnectAttempts}) in ${timeout/1000}s`);
         
         setTimeout(() => {
             reconnectAttempts++;
@@ -47,19 +68,27 @@ function handleReconnection(roomName) {
         }, timeout);
     } else {
         console.log("Max reconnection attempts reached");
-        alert("Connection lost. Please refresh the page.");
+        alert("Connection lost. Please refresh the page to reconnect.");
     }
 }
 
 function sendMessage(message, sender) {
-    if (socket && socket.readyState === WebSocket.OPEN) {
+    if (!socket || socket.readyState !== WebSocket.OPEN) {
+        console.error("WebSocket not connected");
+        return false;
+    }
+    
+    try {
         socket.send(JSON.stringify({
+            'type': 'message',
             'message': message,
             'sender': sender
         }));
         return true;
+    } catch (error) {
+        console.error("Send error:", error);
+        return false;
     }
-    return false;
 }
 
 function updateChatUI(data) {
