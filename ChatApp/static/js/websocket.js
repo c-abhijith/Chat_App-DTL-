@@ -1,120 +1,65 @@
 let socket = null;
 let reconnectAttempts = 0;
-const maxReconnectAttempts = 5;
-let heartbeatInterval;
-let roomNameGlobal;
+const maxReconnectAttempts = 3;
 
 function connectWebSocket(roomName) {
-    if (socket && socket.readyState === WebSocket.OPEN) {
-        console.log("WebSocket already connected");
-        return socket;
-    }
-
-    roomNameGlobal = roomName;
     const wsScheme = window.location.protocol === "https:" ? "wss" : "ws";
-    const wsHost = window.location.host;
-    const wsUrl = `${wsScheme}://${wsHost}/ws/${roomName}/`;
+    const wsUrl = `${wsScheme}://${window.location.host}/ws/${roomName}/`;
     
-    console.log("Attempting WebSocket connection to:", wsUrl);
+    console.log("Connecting to:", wsUrl);
     
-    try {
-        socket = new WebSocket(wsUrl);
-    } catch (error) {
-        console.error("WebSocket construction error:", error);
-        handleReconnection();
-        return null;
-    }
+    socket = new WebSocket(wsUrl);
     
     socket.onopen = function(e) {
-        console.log("WebSocket connection established");
+        console.log("Connected!");
         reconnectAttempts = 0;
-        startHeartbeat();
     };
     
     socket.onclose = function(e) {
-        console.log("WebSocket closed:", e.code, e.reason);
-        stopHeartbeat();
-        handleReconnection();
+        console.log("Disconnected. Code:", e.code, "Reason:", e.reason);
+        handleReconnection(roomName);
     };
     
     socket.onerror = function(e) {
-        console.error("WebSocket error occurred:", e);
-        if (socket.readyState === WebSocket.OPEN) {
-            socket.close();
-        }
+        console.error("WebSocket error:", e);
     };
     
     socket.onmessage = function(e) {
         try {
             const data = JSON.parse(e.data);
-            if (data.type === 'pong') {
-                return;
-            }
             updateChatUI(data);
         } catch (error) {
-            console.error("Message processing error:", error);
+            console.error("Message error:", error);
         }
     };
     
     return socket;
 }
 
-function handleReconnection() {
+function handleReconnection(roomName) {
     if (reconnectAttempts < maxReconnectAttempts) {
-        const timeout = Math.min(1000 * Math.pow(2, reconnectAttempts), 10000);
-        console.log(`Attempting reconnection ${reconnectAttempts + 1}/${maxReconnectAttempts} in ${timeout/1000} seconds`);
+        const timeout = 1000 * (reconnectAttempts + 1);
+        console.log(`Reconnecting in ${timeout/1000} seconds...`);
         
         setTimeout(() => {
             reconnectAttempts++;
-            connectWebSocket(roomNameGlobal);
+            connectWebSocket(roomName);
         }, timeout);
     } else {
-        console.log("Max reconnection attempts reached. Please refresh the page.");
-        alert("Connection lost. Please refresh the page to reconnect.");
-    }
-}
-
-function startHeartbeat() {
-    stopHeartbeat();
-    heartbeatInterval = setInterval(() => {
-        if (socket && socket.readyState === WebSocket.OPEN) {
-            try {
-                socket.send(JSON.stringify({ type: 'ping' }));
-            } catch (error) {
-                console.error("Heartbeat error:", error);
-                socket.close();
-            }
-        }
-    }, 30000);
-}
-
-function stopHeartbeat() {
-    if (heartbeatInterval) {
-        clearInterval(heartbeatInterval);
-        heartbeatInterval = null;
+        console.log("Max reconnection attempts reached");
+        alert("Connection lost. Please refresh the page.");
     }
 }
 
 function sendMessage(message, sender) {
-    if (!socket || socket.readyState !== WebSocket.OPEN) {
-        console.error("WebSocket not connected");
-        alert("Connection lost. Attempting to reconnect...");
-        connectWebSocket(roomNameGlobal);
-        return false;
-    }
-    
-    try {
+    if (socket && socket.readyState === WebSocket.OPEN) {
         socket.send(JSON.stringify({
-            'type': 'message',
             'message': message,
             'sender': sender
         }));
         return true;
-    } catch (error) {
-        console.error("Send error:", error);
-        socket.close();
-        return false;
     }
+    return false;
 }
 
 function updateChatUI(data) {
@@ -128,11 +73,9 @@ function updateChatUI(data) {
     }
 }
 
-// Clean up on page unload
 window.addEventListener('beforeunload', () => {
     if (socket) {
         socket.close();
     }
-    stopHeartbeat();
 });
     
