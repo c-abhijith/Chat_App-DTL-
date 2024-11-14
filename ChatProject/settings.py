@@ -7,7 +7,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-yez#2k@0n&c7qc#vyfs9)q4la-*)2k756@w3#*z7&ybfvbzel^'
 
 DEBUG = True
-ALLOWED_HOSTS = ['https://chat-app-dtl.onrender.com','*']
+ALLOWED_HOSTS = ['chat-app-dtl.onrender.com', 'localhost', '127.0.0.1']
 
 INSTALLED_APPS = [
     'daphne',
@@ -110,4 +110,11 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
+# WebSocket settings
+CSRF_TRUSTED_ORIGINS = ['https://chat-app-dtl.onrender.com']
+CORS_ALLOW_ALL_ORIGINS = True  # Only in development
+CORS_ALLOWED_ORIGINS = [
+    "https://chat-app-dtl.onrender.com",
+]
 
